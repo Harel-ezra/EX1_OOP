@@ -6,7 +6,7 @@ import java.util.*;
 public class WGraph_DS implements weighted_graph
 {
     private HashMap<Integer, node_info> graph;
-    private HashMap<Integer, HashMap<Integer, Double>> grNi;
+    private HashMap<Integer, EdgeList> grNi;
     private int edge_counter = 0;
     private int MC = 0;
 
@@ -16,7 +16,7 @@ public class WGraph_DS implements weighted_graph
     public WGraph_DS()
     {
         graph=new HashMap<Integer, node_info>();
-        grNi=new HashMap<Integer, HashMap<Integer, Double>>();
+        grNi=new HashMap<Integer, EdgeList>();
     }
 
     /**
@@ -25,7 +25,7 @@ public class WGraph_DS implements weighted_graph
     public WGraph_DS(weighted_graph wgr)
     {
         graph=new HashMap<Integer, node_info>();
-        grNi=new HashMap<Integer, HashMap<Integer, Double>>();
+        grNi=new HashMap<Integer, EdgeList>();
         for (node_info n:wgr.getV())
         {
             addNode(n.getKey());
@@ -33,13 +33,17 @@ public class WGraph_DS implements weighted_graph
 
         for (node_info n: wgr.getV())
         {
-            Collection<node_info> ni=wgr.getV(n.getKey());
-            for(node_info i: ni)
+            EdgeList l =((WGraph_DS)wgr).getNiL(n.getKey());
+            for(Integer i: l.getKeyL())
             {
-                double w=getEdge(n.getKey(),i.getKey());
-                this.connect(n.getKey(),i.getKey(),w);
+                double w=getEdge(n.getKey(),i);
+                this.connect(n.getKey(),i,w);
             }
         }
+    }
+    private EdgeList getNiL(int i)
+    {
+        return grNi.get(i);
     }
 
     /**
@@ -58,8 +62,8 @@ public class WGraph_DS implements weighted_graph
     public boolean hasEdge(int node1, int node2) {
         if(graph.containsKey(node1)&&graph.containsKey(node2))
         {
-            HashMap<Integer, Double> ni=grNi.get(node1);
-            return ni.containsKey(node2);
+            if(grNi.get(node1).hasE(node2))
+                return true;
         }
         return false;
     }
@@ -68,11 +72,9 @@ public class WGraph_DS implements weighted_graph
     public double getEdge(int node1, int node2) {
         if(hasEdge(node1,node2))
         {
-            HashMap<Integer, Double> ni=grNi.get(node1);
-            return ni.get(node2);
+            return grNi.get(node1).getW(node2);
 
         }
-
         return -1;
     }
 
@@ -82,7 +84,7 @@ public class WGraph_DS implements weighted_graph
         {
             node_info n=new NodeInfo(key);
             graph.put(key,n);
-            HashMap<Integer, Double> hni=new HashMap<Integer, Double>();
+            EdgeList hni=new EdgeList();
             grNi.put(key, hni);
             this.MC++;
         }
@@ -92,12 +94,13 @@ public class WGraph_DS implements weighted_graph
     public void connect(int node1, int node2, double w) {
         if(graph.containsKey(node1)&& graph.containsKey(node2))
         {
-            if(w>0)
+            if(w>=0)
             {
-                HashMap<Integer, Double> tempH=grNi.get(node1);
-                tempH.put(node2, w);
+
+                EdgeList tempH=grNi.get(node1);
+                tempH.setW(node2, w);
                 tempH=grNi.get(node2);
-                tempH.put(node1, w);
+                tempH.setW(node1, w);
                 this.MC++;
                 this.edge_counter++;
             }
@@ -115,8 +118,8 @@ public class WGraph_DS implements weighted_graph
         Collection<node_info> colNode=new ArrayList<>();
         if (graph.containsKey(node_id))
         {
-            HashMap<Integer, Double> tempH = grNi.get(node_id);
-            Set<Integer> set = tempH.keySet();
+            EdgeList tempH = grNi.get(node_id);
+            Set<Integer> set = tempH.getKeyL();
             for (int i : set) {
                 colNode.add(getNode(i));
             }
@@ -128,14 +131,14 @@ public class WGraph_DS implements weighted_graph
     public node_info removeNode(int key) {
         if(graph.containsKey(key))
         {
-            HashMap<Integer, Double> tempH = grNi.get(key);
-            Set<Integer> set = tempH.keySet();
+            EdgeList tempH = grNi.get(key);
+            Set<Integer> set = tempH.getKeyL();
             for(int i:set)
             {
-                HashMap<Integer, Double> nih = grNi.get(i);
-                if(nih.containsKey(key))
+                EdgeList nih = grNi.get(i);
+                if(nih.hasE(key))
                 {
-                    nih.remove(key);
+                    nih.removeE(key);
                     this.edge_counter--;
                     this.MC++;
                 }
@@ -150,10 +153,10 @@ public class WGraph_DS implements weighted_graph
     public void removeEdge(int node1, int node2) {
         if(hasEdge(node1,node2))
         {
-            HashMap<Integer, Double> tempH=grNi.get(node1);
-            tempH.remove(node2);
+            EdgeList tempH=grNi.get(node1);
+            tempH.removeE(node2);
             tempH=grNi.get(node2);
-            tempH.remove(node1);
+            tempH.removeE(node1);
             this.edge_counter--;
             this.MC++;
         }
@@ -175,7 +178,7 @@ public class WGraph_DS implements weighted_graph
     }
 
 
-    private class NodeInfo implements node_info
+    private class NodeInfo implements node_info, Comparable<node_info>
     {
         private int key_id;
         private String info;
@@ -238,6 +241,102 @@ public class WGraph_DS implements weighted_graph
         public void setTag(double t) {
             this.tag=t;
         }
+
+        /**
+         *Comparator
+         */
+        @Override
+        public int compareTo(node_info n)
+        {
+            if(this.getTag()>n.getTag())
+            {
+                return 1;
+            }
+            else
+                if(this.getTag()==n.getTag())
+                {
+                    return 0;
+                }
+
+            return -1;
+        }
+
+    }
+
+
+    private class EdgeList
+    {
+        private HashMap<Integer, Double> NodeNi;
+
+        public EdgeList()
+        {
+            this.NodeNi= new HashMap<Integer, Double>();
+        }
+
+        public EdgeList(EdgeList l)
+        {
+            for(int i:l.getKeyL())
+            {
+                addNi(i, l.getW(i));
+            }
+
+        }
+
+        public HashMap<Integer, Double> getEL()
+        {
+            return this.NodeNi;
+        }
+
+        public void addNi(Integer i, Double w)
+        {
+            if( i>0 &&w>0)
+            {
+                NodeNi.put(i,w);
+            }
+        }
+
+        public double getW(int i)
+        {
+            if(hasE(i))
+            {
+                return NodeNi.get(i);
+            }
+            return -1;
+        }
+
+        public boolean hasE(int i)
+        {
+            if(NodeNi.containsKey(i))
+            {
+                return true;
+            }
+            return false;
+
+        }
+
+        public Set<Integer> getKeyL()
+        {
+            return this.NodeNi.keySet();
+        }
+
+        public void setW(int key, double w)
+        {
+            if (NodeNi.containsKey(key))
+            {
+                NodeNi.put(key, w);
+            }
+        }
+         public void removeE(int key)
+         {
+             if(NodeNi.containsKey(key))
+             {
+                 NodeNi.remove(key);
+             }
+         }
+
+
+
+
     }
 
 }

@@ -11,11 +11,14 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         this.grAl=new WGraph_DS();
     }
 
+    /**
+     * constructor
+     * @param g
+     */
     public WGraph_Algo (WGraph_DS g)
     {
         this.grAl=g;
     }
-
 
     /**
      * copy constructor
@@ -24,16 +27,28 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         this.grAl = g.getGraph();
     }
 
+    /**
+     * init the graph for set of algorithm
+     * @param g
+     */
     @Override
     public void init(weighted_graph g) {
         this.grAl = g;
     }
 
+    /**
+     * return the graph that this class work
+     * @return
+     */
     @Override
     public weighted_graph getGraph() {
         return this.grAl;
     }
 
+    /**
+     * return a new deep copy of the graph
+     * @return
+     */
     @Override
     public weighted_graph copy() {
         if (grAl != null) {
@@ -43,6 +58,11 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return null;
     }
 
+    /**
+     * return true if the graph 'is connected'. that it mean all node are connected with any way.
+     * use Dijkstra algorithm
+     * @return
+     */
     @Override
     public boolean isConnected() {
         if (grAl.nodeSize() <= 1) {
@@ -57,6 +77,13 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return false;
     }
 
+    /**
+     * return the sort distance between 2 nodes at the graph.
+     * use Dijkstra algorithm
+     * @param src - start node
+     * @param dest - end (target) node
+     * @return
+     */
     @Override
     public double shortestPathDist(int src, int dest) {
         if (grAl.getNode(src) != null && grAl.getNode(dest) != null) {
@@ -68,6 +95,13 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return -1;
     }
 
+    /**
+     * return the description for the sorties path between 2 nodes at the graph
+     * use Dijkstra algorithm
+     * @param src - start node
+     * @param dest - end (target) node
+     * @return
+     */
     @Override
     public List<node_info> shortestPath(int src, int dest) {
         List<node_info> path = new LinkedList<node_info>();
@@ -85,19 +119,24 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return path;
     }
 
+    /**
+     * save and write the graph to a file
+     * @param file - the file name (may include a relative path).
+     * @return
+     */
     @Override
     public boolean save(String file)
     {
         try {
             PrintWriter gFile=new PrintWriter(new File(file));
             StringBuilder sb=new StringBuilder();
-
+// first write al the node
             for(node_info i:grAl.getV())
             {
                 gFile.write(i.getKey()+"\n");
             }
             gFile.write("!"+"\n");
-
+// second write for any node all is neighbor
             for(node_info i:grAl.getV())
             {
                 sb.append(i.getKey());
@@ -113,8 +152,8 @@ public class WGraph_Algo implements weighted_graph_algorithms {
                 sb.append("\n");
                 gFile.write(sb.toString());
                 sb.setLength(0);
-                gFile.close();
             }
+            gFile.close();
             return true;
         }
             catch (FileNotFoundException e)
@@ -125,6 +164,11 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return false;
     }
 
+    /**
+     * load and read a new graph from a file
+     * @param file - file name
+     * @return
+     */
     @Override
     public boolean load(String file) {
         String line;
@@ -132,12 +176,14 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         {
             BufferedReader gFile=new BufferedReader(new FileReader(file));
             line=gFile.readLine();
+            // first read al the node
             while(!line.equals("!"))
             {
                 int i=Integer.parseInt(line);
                 grAl.addNode(i);
                 line=gFile.readLine();
             }
+            // second read for any node all is neighbor
             while ((line=gFile.readLine())!=null)
             {
                 String[] s=line.split(",");
@@ -160,6 +206,11 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return false;
     }
 
+    /**
+     * Dijkstra algorithm to mark the sorties distance for any node at the graph from start node
+     * @param src
+     * @return
+     */
     private HashMap<Integer, Integer> Dijkstra(int src) {
         Queue<node_info> queue = new PriorityQueue<node_info>();
         HashMap<Integer, Integer> hash = new HashMap<Integer, Integer>(); // hash for father key.
